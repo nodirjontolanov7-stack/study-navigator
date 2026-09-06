@@ -6,13 +6,14 @@ export interface Task {
   title: string;
   /** Aniq kunlik topshiriqlar */
   steps: string[];
-  /** lex.uz havolasi (qonunchilik kunlari uchun) */
-  link?: string;
+  /** lex.uz havolalari (shu kungi hujjatlar uchun) */
+  links?: { label: string; url: string }[];
   type: TaskType;
 }
 
-const START = new Date(2026, 8, 6); // 6-sentabr 2026
+const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
 const EXAM = new Date(2026, 11, 23); // 23-dekabr 2026
+const LAST_STUDY = new Date(2026, 11, 16); // shu kungacha 3 davra, keyin yakuniy takrorlash
 
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
@@ -31,7 +32,7 @@ const BOOKS = [
   "3-darslik",
   "4-darslik",
 ];
-const BOOK_DAYS = 12;
+
 
 /** Hujjatlar ro'yxati: [nomi, ajratilgan kun soni, kunlik bo'limlar] */
 type Doc = { title: string; parts: string[] };
@@ -199,61 +200,115 @@ const REVIEW_TOPICS: { title: string; steps: string[] }[] = [
   },
 ];
 
-export function buildPlan(): Task[] {
-  const tasks: Task[] = [];
-  let day = 0;
-  const push = (t: Omit<Task, "index" | "date">) => {
-    tasks.push({ ...t, index: tasks.length, date: addDays(START, day) });
-    day++;
-  };
+/** Bir kunlik birlik: darslik qismi yoki qonunchilik hujjati bo'limi */
+interface Unit {
+  title: string;
+  part: string;
+  kind: "book" | "doc";
+  link?: string;
+}
 
-  // 1-bosqich: darsliklar
-  BOOKS.forEach((book, bi) => {
-    for (let p = 1; p <= BOOK_DAYS; p++) {
-      const last = p === BOOK_DAYS;
-      push({
-        title: `${book} — ${p}/${BOOK_DAYS} qism`,
-        type: "book",
-        steps: [
-          `Kitobning ${Math.round(((p - 1) / BOOK_DAYS) * 100)}–${Math.round((p / BOOK_DAYS) * 100)}% oralig'ini o'qing (~2 soat)`,
-          "O'qigan qismdan 1 varaq konspekt yozing (ta'rif + misol)",
-          last
-            ? `Butun ${bi + 1}-darslik bo'yicha 20 ta savol tuzib javob bering`
-            : "Kechqurun 15 daqiqa oldingi kun konspektini takrorlang",
-        ],
-      });
+/** Bir davradagi barcha birliklar: darslik qismlari qonunlar ichiga teng aralashtirilgan */
+function cycleUnits(): Unit[] {
+  const laws: Unit[] = DOCS.flatMap((doc) =>
+    doc.parts.map((part, pi) => ({
+      title: doc.parts.length > 1 ? `${doc.title} (${pi + 1}/${doc.parts.length})` : doc.title,
+      part,
+      kind: "doc" as const,
+      link: lexLink(doc.title),
+    }))
+  );
+  const books: Unit[] = BOOKS.flatMap((b) =>
+    [1, 2].map((h) => ({
+      title: `${b} — ${h}/2 qism`,
+      part: h === 1 ? "birinchi yarmi" : "ikkinchi yarmi",
+      kind: "book" as const,
+    }))
+  );
+  // kitoblarni qonunlar orasiga tekis joylashtirish
+  const out: Unit[] = [];
+  const step = laws.length / books.length;
+  let bi = 0;
+  laws.forEach((u, i) => {
+    out.push(u);
+    if (bi < books.length && i >= Math.floor((bi + 1) * step) - 1) {
+      out.push(books[bi++]!);
     }
   });
+  while (bi < books.length) out.push(books[bi++]!);
+  return out;
+}
 
-  // 2-bosqich: qonunchilik hujjatlari (lex.uz)
-  DOCS.forEach((doc, di) => {
-    doc.parts.forEach((part, pi) => {
-      const multi = doc.parts.length > 1;
-      push({
-        title: multi
-          ? `${di + 1}. ${doc.title} (${pi + 1}/${doc.parts.length})`
-          : `${di + 1}. ${doc.title}`,
-        link: lexLink(doc.title),
-        type: "law",
-        steps: [
-          `lex.uz da oching va o'qing: ${part}`,
-          "Asosiy moddalar raqami bilan qisqa konspekt yozing (10–15 qator)",
-          pi === doc.parts.length - 1
-            ? "Hujjat bo'yicha 5 ta savol tuzib o'zingizni sinang"
-            : "Bugungi moddalardan 5 ta tayanch tushunchani yodlang",
-        ],
-      });
+function nextWeekday(d: Date): Date {
+  const r = new Date(d);
+  while (r.getDay() === 0 || r.getDay() === 6) r.setDate(r.getDate() + 1);
+  return r;
+}
+
+const CYCLE_VERB = [
+  (u: Unit) =>
+    u.kind === "doc"
+      ? `lex.uz da ochib diqqat bilan o'qing — ${u.title}: ${u.part}`
+      : `Darslikdan o'qing — ${u.title} (${u.part})`,
+  (u: Unit) =>
+    u.kind === "doc"
+      ? `2-marta o'qing, konspekt bilan solishtiring — ${u.title}: ${u.part}`
+      : `2-marta o'qing — ${u.title} (${u.part}), konspektni to'ldiring`,
+  (u: Unit) =>
+    u.kind === "doc"
+      ? `Konspekt bo'yicha takrorlang — ${u.title}: ${u.part}`
+      : `Konspekt bo'yicha takrorlang — ${u.title}`,
+];
+
+const CYCLE_TAIL = [
+  "O'qiganlaringizdan 1 varaq konspekt yozing (ta'rif + modda raqamlari)",
+  "Eski konspektni yangilang va har bir mavzudan 5 ta savol tuzib javob bering",
+  "Har bir mavzudan 10 ta savol-javob ishlang, yodda qolmaganini belgilang",
+];
+
+export function buildPlan(): Task[] {
+  const tasks: Task[] = [];
+  const push = (t: Omit<Task, "index" | "date">, date: Date) => {
+    tasks.push({ ...t, index: tasks.length, date });
+  };
+
+  // Haftada 5 kun (dushanba–juma) o'qish kunlari ro'yxati
+  const studyDays: Date[] = [];
+  for (let d = nextWeekday(START); d <= LAST_STUDY; d = nextWeekday(addDays(d, 1))) {
+    studyDays.push(d);
+  }
+
+  // 3 davra: har davrada barcha birliklar (kitob + qonun aralash)
+  const units = cycleUnits();
+  const perCycle = Math.floor(studyDays.length / 3);
+  for (let c = 0; c < 3; c++) {
+    const days = studyDays.slice(c * perCycle, c === 2 ? studyDays.length : (c + 1) * perCycle);
+    const base = Math.floor(units.length / days.length);
+    const rem = units.length % days.length;
+    let ui = 0;
+    days.forEach((date, di) => {
+      const count = base + (di < rem ? 1 : 0);
+      const dayUnits = units.slice(ui, ui + count);
+      ui += count;
+      push(
+        {
+          title: `${c + 1}-davra: ${dayUnits.map((u) => u.title).join(" + ")}`,
+          type: dayUnits.some((u) => u.kind === "doc") ? "law" : "book",
+          steps: [...dayUnits.map((u) => CYCLE_VERB[c]!(u)), CYCLE_TAIL[c]!],
+          links: dayUnits
+            .filter((u) => u.link)
+            .map((u) => ({ label: u.title, url: u.link! })),
+        },
+        date
+      );
     });
-  });
+  }
 
-  // 3-bosqich: takrorlash — imtihongacha qolgan kunlar
-  const reviewDays = Math.max(
-    0,
-    Math.round((EXAM.getTime() - addDays(START, day).getTime()) / 86400000)
-  );
-  for (let i = 0; i < reviewDays; i++) {
-    const topic = REVIEW_TOPICS[i % REVIEW_TOPICS.length]!;
-    push({ title: topic.title, steps: topic.steps, type: "review" });
+  // Yakuniy takrorlash: 16-dekabrdan imtihongacha (hafta kunlari)
+  let ri = 0;
+  for (let d = nextWeekday(addDays(LAST_STUDY, 1)); d < EXAM; d = nextWeekday(addDays(d, 1))) {
+    const topic = REVIEW_TOPICS[ri++ % REVIEW_TOPICS.length]!;
+    push({ title: topic.title, steps: topic.steps, type: "review" }, d);
   }
 
   tasks.push({
