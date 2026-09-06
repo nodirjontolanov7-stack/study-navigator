@@ -101,9 +101,9 @@ function Index() {
             Imtihon rejasi
           </h1>
           <p className="mt-3 max-w-xl text-muted-foreground">
-            Har bir kun uchun aniq topshiriqlar: nimani o'qish, nimani konspekt
-            qilish va nimani takrorlash. Qonunchilik hujjatlari lex.uz havolasi
-            bilan berilgan.
+            Haftada 5 kun (dushanba–juma), shanba–yakshanba dam. Barcha materiallar
+            3 marta to'liq o'tiladi: har kuni darslik va qonunlar aralash, 3 ta davrda.
+            Qonunchilik hujjatlari lex.uz havolasi bilan berilgan.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -148,16 +148,17 @@ function Index() {
                   </li>
                 ))}
               </ul>
-              {nextTask.link && (
+              {nextTask.links?.map((l) => (
                 <a
-                  href={nextTask.link}
+                  key={l.url}
+                  href={l.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-block text-sm font-medium text-primary underline"
+                  className="mt-3 block text-sm font-medium text-primary underline"
                 >
-                  lex.uz da ochish →
+                  lex.uz: {l.label} →
                 </a>
-              )}
+              ))}
             </div>
           )}
         </div>
@@ -262,16 +263,17 @@ function Index() {
                           <li key={i}>{s}</li>
                         ))}
                       </ol>
-                      {t.link && (
+                      {t.links?.map((l) => (
                         <a
-                          href={t.link}
+                          key={l.url}
+                          href={l.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-3 inline-block text-sm font-medium text-primary underline"
+                          className="mt-3 block text-sm font-medium text-primary underline"
                         >
-                          lex.uz da ochish →
+                          lex.uz: {l.label} →
                         </a>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
