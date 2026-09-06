@@ -73,7 +73,7 @@ export function buildPlan(): Task[] {
   ];
   for (let i = 0; i < reviewDays; i++) {
     push(
-      reviewTopics[i % reviewTopics.length],
+      reviewTopics[i % reviewTopics.length] ?? "Umumiy takrorlash",
       "Konspektlarni ko'zdan kechiring, qiyin joylarni qayta o'qing",
       "review"
     );
@@ -104,7 +104,7 @@ const MONTHS = [
 ];
 
 export function formatDate(d: Date): string {
-  return `${d.getDate()}-${MONTHS[d.getMonth()]}, ${WEEKDAYS[d.getDay()]}`;
+  return `${d.getDate()}-${MONTHS[d.getMonth()] ?? ""}, ${WEEKDAYS[d.getDay()] ?? ""}`;
 }
 
 export function sameDay(a: Date, b: Date): boolean {
