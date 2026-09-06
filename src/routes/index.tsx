@@ -6,23 +6,25 @@ import {
   formatDate,
   sameDay,
   EXAM_DATE,
+  DOC_COUNT,
+  BOOK_COUNT,
   type TaskType,
 } from "@/lib/plan";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Imtihon Rejasi — 23 dekabr" },
+      { title: "Imtihon Rejasi — kunlik topshiriqlar" },
       {
         name: "description",
         content:
-          "6 sentabrdan 23 dekabrgacha: 4 ta darslik, Konstitutsiya va 35 ta qonun uchun kunlik o'qish rejasi va taraqqiyot kuzatuvi.",
+          "6 sentabrdan 23 dekabrgacha: 4 ta darslik, Konstitutsiya va 35 ta qonunchilik hujjati bo'yicha aniq kunlik topshiriqlar va lex.uz havolalari.",
       },
-      { property: "og:title", content: "Imtihon Rejasi — 23 dekabr" },
+      { property: "og:title", content: "Imtihon Rejasi — kunlik topshiriqlar" },
       {
         property: "og:description",
         content:
-          "4 ta darslik va 36 ta huquqiy hujjat uchun kunlik shaxsiy o'qish rejasi.",
+          "Har kun uchun aniq topshiriqlar: nima o'qish, nima konspekt qilish, nimani takrorlash.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -44,6 +46,7 @@ function Index() {
   const plan = useMemo(buildPlan, []);
   const [done, setDone] = useState<Set<number>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const [open, setOpen] = useState<number | null>(null);
   const [now] = useState(() => new Date());
 
   useEffect(() => {
@@ -73,14 +76,18 @@ function Index() {
   const pct = Math.round((doneCount / totalStudy) * 100);
 
   const todayTask = plan.find((t) => sameDay(t.date, now));
-  const nextTask =
-    todayTask ?? plan.find((t) => t.date > now && !done.has(t.index));
+  const nextTask = todayTask ?? plan.find((t) => t.date > now && !done.has(t.index));
+
+  useEffect(() => {
+    if (loaded && nextTask && open === null) setOpen(nextTask.index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   const stats = [
     { label: "Imtihongacha", value: `${daysLeft(now)} kun` },
     { label: "Bajarildi", value: `${doneCount}/${totalStudy}` },
-    { label: "Darslik", value: "4 ta" },
-    { label: "Hujjat", value: "36 ta" },
+    { label: "Darslik", value: `${BOOK_COUNT} ta` },
+    { label: "Hujjat", value: `${DOC_COUNT} ta` },
   ];
 
   return (
@@ -94,9 +101,9 @@ function Index() {
             Imtihon rejasi
           </h1>
           <p className="mt-3 max-w-xl text-muted-foreground">
-            4 ta darslik, Konstitutsiya va 35 ta qonun kunlarga bo'linib
-            berildi. Har kuni belgilang — oxirgi ikki hafta takrorlash uchun
-            ajratilgan.
+            Har bir kun uchun aniq topshiriqlar: nimani o'qish, nimani konspekt
+            qilish va nimani takrorlash. Qonunchilik hujjatlari lex.uz havolasi
+            bilan berilgan.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -134,9 +141,23 @@ function Index() {
               <div className="mt-1 font-display text-xl font-semibold text-accent-foreground">
                 {nextTask.title}
               </div>
-              <div className="mt-1 text-sm text-accent-foreground/80">
-                {formatDate(nextTask.date)} — {nextTask.detail}
-              </div>
+              <ul className="mt-2 space-y-1 text-sm text-accent-foreground/80">
+                {nextTask.steps.map((s, i) => (
+                  <li key={i}>
+                    {i + 1}. {s}
+                  </li>
+                ))}
+              </ul>
+              {nextTask.link && (
+                <a
+                  href={nextTask.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-block text-sm font-medium text-primary underline"
+                >
+                  lex.uz da ochish →
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -147,75 +168,113 @@ function Index() {
           {plan.map((t) => {
             const isDone = done.has(t.index);
             const isToday = sameDay(t.date, now);
+            const isOpen = open === t.index;
             return (
               <li key={t.index}>
-                <button
-                  onClick={() => toggle(t.index)}
-                  className={`flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors ${
+                <div
+                  className={`rounded-lg border transition-colors ${
                     t.type === "exam"
                       ? "border-primary bg-primary text-primary-foreground"
                       : isDone
                         ? "border-border bg-secondary/60"
                         : isToday
                           ? "border-primary/50 bg-card shadow-sm"
-                          : "border-border bg-card hover:bg-accent/50"
+                          : "border-border bg-card"
                   }`}
                 >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-sm ${
-                      t.type === "exam"
-                        ? "border-primary-foreground/40"
-                        : isDone
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-input bg-background"
-                    }`}
-                    aria-hidden
-                  >
-                    {isDone && t.type !== "exam" ? "✓" : ""}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={`block font-medium ${
-                        isDone && t.type !== "exam"
-                          ? "text-muted-foreground line-through"
-                          : t.type === "exam"
-                            ? "text-primary-foreground"
+                  <div className="flex items-center gap-3 p-4">
+                    <button
+                      onClick={() => toggle(t.index)}
+                      aria-label={isDone ? "Belgini olish" : "Bajarildi deb belgilash"}
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-sm ${
+                        t.type === "exam"
+                          ? "border-primary-foreground/40"
+                          : isDone
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input bg-background"
+                      }`}
+                    >
+                      {isDone && t.type !== "exam" ? "✓" : ""}
+                    </button>
+                    <button
+                      onClick={() => setOpen(isOpen ? null : t.index)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <span
+                        className={`block font-medium ${
+                          isDone && t.type !== "exam"
+                            ? "text-muted-foreground line-through"
+                            : t.type === "exam"
+                              ? "text-primary-foreground"
+                              : "text-foreground"
+                        }`}
+                      >
+                        {t.title}
+                      </span>
+                      <span
+                        className={`mt-0.5 block text-sm ${
+                          t.type === "exam"
+                            ? "text-primary-foreground/80"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {t.steps.length} topshiriq — {isOpen ? "yopish" : "ko'rish"}
+                      </span>
+                    </button>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className={`text-xs ${
+                          t.type === "exam"
+                            ? "text-primary-foreground/80"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {formatDate(t.date)}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          t.type === "exam"
+                            ? "bg-primary-foreground/15 text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        {isToday ? "Bugun" : TYPE_LABEL[t.type]}
+                      </span>
+                    </span>
+                  </div>
+
+                  {isOpen && (
+                    <div
+                      className={`border-t px-4 py-3 ${
+                        t.type === "exam"
+                          ? "border-primary-foreground/20"
+                          : "border-border"
+                      }`}
+                    >
+                      <ol
+                        className={`list-decimal space-y-1.5 pl-5 text-sm ${
+                          t.type === "exam"
+                            ? "text-primary-foreground/90"
                             : "text-foreground"
-                      }`}
-                    >
-                      {t.title}
-                    </span>
-                    <span
-                      className={`mt-0.5 block text-sm ${
-                        t.type === "exam"
-                          ? "text-primary-foreground/80"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {t.detail}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 flex-col items-end gap-1">
-                    <span
-                      className={`text-xs ${
-                        t.type === "exam"
-                          ? "text-primary-foreground/80"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatDate(t.date)}
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        t.type === "exam"
-                          ? "bg-primary-foreground/15 text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground"
-                      }`}
-                    >
-                      {isToday ? "Bugun" : TYPE_LABEL[t.type]}
-                    </span>
-                  </span>
-                </button>
+                        }`}
+                      >
+                        {t.steps.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ol>
+                      {t.link && (
+                        <a
+                          href={t.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-block text-sm font-medium text-primary underline"
+                        >
+                          lex.uz da ochish →
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </li>
             );
           })}
