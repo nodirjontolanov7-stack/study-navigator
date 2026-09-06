@@ -6,13 +6,14 @@ export interface Task {
   title: string;
   /** Aniq kunlik topshiriqlar */
   steps: string[];
-  /** lex.uz havolasi (qonunchilik kunlari uchun) */
-  link?: string;
+  /** lex.uz havolalari (shu kungi hujjatlar uchun) */
+  links?: { label: string; url: string }[];
   type: TaskType;
 }
 
-const START = new Date(2026, 8, 6); // 6-sentabr 2026
+const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
 const EXAM = new Date(2026, 11, 23); // 23-dekabr 2026
+const LAST_STUDY = new Date(2026, 11, 16); // shu kungacha 3 davra, keyin yakuniy takrorlash
 
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
