@@ -32,7 +32,7 @@ const BOOKS = [
   "3-darslik",
   "4-darslik",
 ];
-const BOOK_DAYS = 12;
+
 
 /** Hujjatlar ro'yxati: [nomi, ajratilgan kun soni, kunlik bo'limlar] */
 type Doc = { title: string; parts: string[] };
