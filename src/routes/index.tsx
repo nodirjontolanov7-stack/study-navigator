@@ -100,7 +100,7 @@ function Index() {
     setOpen(t.index);
     requestAnimationFrame(() =>
       document
-        .getElementById(`day-${t.index}`)
+        .getElementById(view === "table" ? `row-${t.index}` : `day-${t.index}`)
         ?.scrollIntoView({ behavior: "smooth", block: "center" })
     );
   };
