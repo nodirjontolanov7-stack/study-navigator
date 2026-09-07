@@ -9,6 +9,8 @@ export interface Task {
   /** lex.uz havolalari (shu kungi hujjatlar uchun) */
   links?: { label: string; url: string }[];
   type: TaskType;
+  /** 1, 2 yoki 3-davra (takrorlash va imtihon uchun 0) */
+  cycle: 0 | 1 | 2 | 3;
 }
 
 const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
