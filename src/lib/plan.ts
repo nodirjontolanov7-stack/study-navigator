@@ -11,7 +11,25 @@ export interface Task {
   type: TaskType;
   /** 1, 2 yoki 3-davra (takrorlash va imtihon uchun 0) */
   cycle: 0 | 1 | 2 | 3;
+  /** Jadval ko'rinishi uchun ustunlar */
+  cells: {
+    book: string[];
+    doc: string[];
+    english: string;
+  };
 }
+
+/** Har kunlik English topshirig'i (aylanma tartibda) */
+const ENGLISH_TASKS = [
+  "Vocab: 20 yangi so'z (huquq lug'ati) + kartochka",
+  "Try to speak: 5 daqiqa o'zingizni yozib gapiring",
+  "Grammar: 1 mavzu + 20 ta mashq",
+  "Listening: 10 daqiqa podcast + eshitganini yozish",
+  "Reading: 1 maqola + notanish so'zlarni chiqarish",
+  "Vocab takrorlash: oldingi 100 so'z testi",
+  "Writing: 150 so'zlik matn yozish",
+  "Speaking: 10 ta savolga ovozli javob",
+];
 
 const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
 const EXAM = new Date(2026, 11, 23); // 23-dekabr 2026
@@ -292,15 +310,21 @@ export function buildPlan(): Task[] {
       const count = base + (di < rem ? 1 : 0);
       const dayUnits = units.slice(ui, ui + count);
       ui += count;
+      const eng = ENGLISH_TASKS[tasks.length % ENGLISH_TASKS.length]!;
       push(
         {
           cycle: (c + 1) as 1 | 2 | 3,
           title: `${c + 1}-davra: ${dayUnits.map((u) => u.title).join(" + ")}`,
           type: dayUnits.some((u) => u.kind === "doc") ? "law" : "book",
-          steps: [...dayUnits.map((u) => CYCLE_VERB[c]!(u)), CYCLE_TAIL[c]!],
+          steps: [...dayUnits.map((u) => CYCLE_VERB[c]!(u)), CYCLE_TAIL[c]!, `English — ${eng}`],
           links: dayUnits
             .filter((u) => u.link)
             .map((u) => ({ label: u.title, url: u.link! })),
+          cells: {
+            book: dayUnits.filter((u) => u.kind === "book").map((u) => u.title),
+            doc: dayUnits.filter((u) => u.kind === "doc").map((u) => u.title),
+            english: eng,
+          },
         },
         date
       );
@@ -311,7 +335,21 @@ export function buildPlan(): Task[] {
   let ri = 0;
   for (let d = nextWeekday(addDays(LAST_STUDY, 1)); d < EXAM; d = nextWeekday(addDays(d, 1))) {
     const topic = REVIEW_TOPICS[ri++ % REVIEW_TOPICS.length]!;
-    push({ title: topic.title, steps: topic.steps, type: "review", cycle: 0 }, d);
+    const eng = ENGLISH_TASKS[tasks.length % ENGLISH_TASKS.length]!;
+    push(
+      {
+        title: topic.title,
+        steps: [...topic.steps, `English — ${eng}`],
+        type: "review",
+        cycle: 0,
+        cells: {
+          book: topic.title.includes("darslik") ? [topic.title] : [],
+          doc: topic.title.includes("darslik") ? [] : [topic.title],
+          english: eng,
+        },
+      },
+      d
+    );
   }
 
   tasks.push({
@@ -320,6 +358,7 @@ export function buildPlan(): Task[] {
     title: "IMTIHON KUNI",
     type: "exam",
     cycle: 0,
+    cells: { book: [], doc: ["IMTIHON KUNI"], english: "—" },
     steps: [
       "Hujjatlaringizni oldindan tayyorlab qo'ying",
       "Ertalab faqat qisqa konspektni ko'zdan kechiring",
