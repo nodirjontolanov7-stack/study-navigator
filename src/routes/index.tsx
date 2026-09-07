@@ -463,6 +463,7 @@ function Index() {
             );
           })}
         </ol>
+        )}
         <p className="mt-8 text-center text-sm text-muted-foreground">
           Imtihon: {formatDate(EXAM_DATE)}. Belgi brauzeringizda saqlanadi.
         </p>
