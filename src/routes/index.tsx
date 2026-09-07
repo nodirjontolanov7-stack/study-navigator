@@ -48,6 +48,7 @@ function Index() {
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
   const [now] = useState(() => new Date());
+  const [filter, setFilter] = useState<0 | 1 | 2 | 3 | "all">("all");
 
   useEffect(() => {
     try {
@@ -82,6 +83,26 @@ function Index() {
     if (loaded && nextTask && open === null) setOpen(nextTask.index);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
+
+  const cycleStats = ([1, 2, 3] as const).map((c) => {
+    const list = plan.filter((t) => t.cycle === c);
+    const d = list.filter((t) => done.has(t.index)).length;
+    return { cycle: c, total: list.length, done: d, pct: list.length ? Math.round((d / list.length) * 100) : 0 };
+  });
+
+  const visible = filter === "all" ? plan : plan.filter((t) => t.cycle === filter);
+
+  const goToday = () => {
+    const t = todayTask ?? nextTask;
+    if (!t) return;
+    setFilter("all");
+    setOpen(t.index);
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`day-${t.index}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    );
+  };
 
   const stats = [
     { label: "Imtihongacha", value: `${daysLeft(now)} kun` },
@@ -165,13 +186,56 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <ol className="space-y-2">
-          {plan.map((t) => {
+        <div className="grid gap-3 sm:grid-cols-3">
+          {cycleStats.map((c) => (
+            <div key={c.cycle} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-medium text-foreground">{c.cycle}-davra</span>
+                <span className="text-xs text-muted-foreground">
+                  {c.done}/{c.total}
+                </span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${c.pct}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {([["all", "Hammasi"], [1, "1-davra"], [2, "2-davra"], [3, "3-davra"], [0, "Takrorlash"]] as const).map(
+            ([value, label]) => (
+              <button
+                key={String(value)}
+                onClick={() => setFilter(value)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  filter === value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            )
+          )}
+          <button
+            onClick={goToday}
+            className="ml-auto rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+          >
+            Bugunga o'tish
+          </button>
+        </div>
+
+        <ol className="mt-4 space-y-2">
+          {visible.map((t) => {
             const isDone = done.has(t.index);
             const isToday = sameDay(t.date, now);
             const isOpen = open === t.index;
             return (
-              <li key={t.index}>
+              <li key={t.index} id={`day-${t.index}`}>
                 <div
                   className={`rounded-lg border transition-colors ${
                     t.type === "exam"

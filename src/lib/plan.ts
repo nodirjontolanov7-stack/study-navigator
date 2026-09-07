@@ -9,6 +9,8 @@ export interface Task {
   /** lex.uz havolalari (shu kungi hujjatlar uchun) */
   links?: { label: string; url: string }[];
   type: TaskType;
+  /** 1, 2 yoki 3-davra (takrorlash va imtihon uchun 0) */
+  cycle: 0 | 1 | 2 | 3;
 }
 
 const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
@@ -292,6 +294,7 @@ export function buildPlan(): Task[] {
       ui += count;
       push(
         {
+          cycle: (c + 1) as 1 | 2 | 3,
           title: `${c + 1}-davra: ${dayUnits.map((u) => u.title).join(" + ")}`,
           type: dayUnits.some((u) => u.kind === "doc") ? "law" : "book",
           steps: [...dayUnits.map((u) => CYCLE_VERB[c]!(u)), CYCLE_TAIL[c]!],
@@ -308,7 +311,7 @@ export function buildPlan(): Task[] {
   let ri = 0;
   for (let d = nextWeekday(addDays(LAST_STUDY, 1)); d < EXAM; d = nextWeekday(addDays(d, 1))) {
     const topic = REVIEW_TOPICS[ri++ % REVIEW_TOPICS.length]!;
-    push({ title: topic.title, steps: topic.steps, type: "review" }, d);
+    push({ title: topic.title, steps: topic.steps, type: "review", cycle: 0 }, d);
   }
 
   tasks.push({
@@ -316,6 +319,7 @@ export function buildPlan(): Task[] {
     date: EXAM,
     title: "IMTIHON KUNI",
     type: "exam",
+    cycle: 0,
     steps: [
       "Hujjatlaringizni oldindan tayyorlab qo'ying",
       "Ertalab faqat qisqa konspektni ko'zdan kechiring",
