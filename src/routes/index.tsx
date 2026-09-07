@@ -49,6 +49,7 @@ function Index() {
   const [open, setOpen] = useState<number | null>(null);
   const [now] = useState(() => new Date());
   const [filter, setFilter] = useState<0 | 1 | 2 | 3 | "all">("all");
+  const [view, setView] = useState<"table" | "list">("table");
 
   useEffect(() => {
     try {
