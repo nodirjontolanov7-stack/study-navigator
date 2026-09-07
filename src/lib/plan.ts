@@ -29,10 +29,10 @@ function lexLink(title: string): string {
 
 /** 4 ta darslik — har biri 12 kun */
 const BOOKS = [
-  "1-darslik",
-  "2-darslik",
-  "3-darslik",
-  "4-darslik",
+  "Huquqshunoslik 8-sinf",
+  "Huquqshunoslik 9-sinf",
+  "Huquqshunoslik 10-sinf",
+  "Huquqshunoslik 11-sinf",
 ];
 
 
