@@ -11,7 +11,25 @@ export interface Task {
   type: TaskType;
   /** 1, 2 yoki 3-davra (takrorlash va imtihon uchun 0) */
   cycle: 0 | 1 | 2 | 3;
+  /** Jadval ko'rinishi uchun ustunlar */
+  cells: {
+    book: string[];
+    doc: string[];
+    english: string;
+  };
 }
+
+/** Har kunlik English topshirig'i (aylanma tartibda) */
+const ENGLISH_TASKS = [
+  "Vocab: 20 yangi so'z (huquq lug'ati) + kartochka",
+  "Try to speak: 5 daqiqa o'zingizni yozib gapiring",
+  "Grammar: 1 mavzu + 20 ta mashq",
+  "Listening: 10 daqiqa podcast + eshitganini yozish",
+  "Reading: 1 maqola + notanish so'zlarni chiqarish",
+  "Vocab takrorlash: oldingi 100 so'z testi",
+  "Writing: 150 so'zlik matn yozish",
+  "Speaking: 10 ta savolga ovozli javob",
+];
 
 const START = new Date(2026, 8, 6); // 6-sentabr 2026 (yakshanba — 1-o'qish kuni dushanba)
 const EXAM = new Date(2026, 11, 23); // 23-dekabr 2026
