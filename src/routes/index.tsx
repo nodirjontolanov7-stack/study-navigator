@@ -221,14 +221,132 @@ function Index() {
               </button>
             )
           )}
-          <button
-            onClick={goToday}
-            className="ml-auto rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
-          >
-            Bugunga o'tish
-          </button>
+          <div className="ml-auto flex gap-2">
+            <div className="flex overflow-hidden rounded-full border border-border bg-card">
+              {(["table", "list"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    view === v
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v === "table" ? "Jadval" : "Ro'yxat"}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={goToday}
+              className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              Bugunga o'tish
+            </button>
+          </div>
         </div>
 
+        {view === "table" && (
+          <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
+            <table className="w-full min-w-[720px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-secondary/70 text-left">
+                  <th className="w-10 border-b border-border px-3 py-2.5 font-medium text-muted-foreground">✓</th>
+                  <th className="w-32 border-b border-l border-border px-3 py-2.5 font-medium text-muted-foreground">Sana</th>
+                  <th className="border-b border-l border-border px-3 py-2.5 font-medium text-muted-foreground">Darslik</th>
+                  <th className="border-b border-l border-border px-3 py-2.5 font-medium text-muted-foreground">NHH (qonunchilik)</th>
+                  <th className="w-56 border-b border-l border-border px-3 py-2.5 font-medium text-muted-foreground">English</th>
+                  <th className="w-24 border-b border-l border-border px-3 py-2.5 font-medium text-muted-foreground">Davra</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((t) => {
+                  const isDone = done.has(t.index);
+                  const isToday = sameDay(t.date, now);
+                  return (
+                    <tr
+                      key={t.index}
+                      id={`row-${t.index}`}
+                      className={
+                        t.type === "exam"
+                          ? "bg-primary/10"
+                          : isDone
+                            ? "bg-secondary/40 text-muted-foreground"
+                            : isToday
+                              ? "bg-accent"
+                              : ""
+                      }
+                    >
+                      <td className="border-b border-border px-3 py-2 align-top">
+                        <button
+                          onClick={() => toggle(t.index)}
+                          aria-label={isDone ? "Belgini olish" : "Bajarildi deb belgilash"}
+                          className={`flex h-5 w-5 items-center justify-center rounded border text-xs ${
+                            isDone
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input bg-background"
+                          }`}
+                        >
+                          {isDone ? "✓" : ""}
+                        </button>
+                      </td>
+                      <td className="whitespace-nowrap border-b border-l border-border px-3 py-2 align-top">
+                        {formatDate(t.date)}
+                        {isToday && (
+                          <span className="ml-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                            bugun
+                          </span>
+                        )}
+                      </td>
+                      <td className={`border-b border-l border-border px-3 py-2 align-top ${isDone ? "line-through" : ""}`}>
+                        {t.cells.book.length ? t.cells.book.join(", ") : "—"}
+                      </td>
+                      <td className={`border-b border-l border-border px-3 py-2 align-top ${isDone ? "line-through" : ""}`}>
+                        {t.cells.doc.length ? (
+                          <ul className="space-y-1">
+                            {t.cells.doc.map((d, i) => {
+                              const link = t.links?.find((l) => l.label === d);
+                              return (
+                                <li key={i}>
+                                  {link ? (
+                                    <a
+                                      href={link.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-primary underline decoration-dotted"
+                                    >
+                                      {d}
+                                    </a>
+                                  ) : (
+                                    d
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="border-b border-l border-border px-3 py-2 align-top">
+                        {t.cells.english}
+                      </td>
+                      <td className="whitespace-nowrap border-b border-l border-border px-3 py-2 align-top text-muted-foreground">
+                        {t.type === "exam"
+                          ? "Imtihon"
+                          : t.cycle === 0
+                            ? "Takrorlash"
+                            : `${t.cycle}-davra`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {view === "list" && (
         <ol className="mt-4 space-y-2">
           {visible.map((t) => {
             const isDone = done.has(t.index);
